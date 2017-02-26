@@ -1,0 +1,15 @@
+2/25
+
+- need to use code embeds
+    - tried header injection for gl and geocoder scripts, didn't seem to work
+    - don't load async- need mbxgl to be loaded
+
+- floats not working in preview
+- copied old code into `backup.html`
+
+- setting height for the map div makes a scroll, doesn't set page height :(
+
+- got spreadsheet import working in data.html, need to integrate into map
+    - need to track down actual spreadsheet, use that instead
+- got map on website, with original fake bubbles
+
