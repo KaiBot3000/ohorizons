@@ -1,17 +1,22 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset='utf-8' />
-    <title></title>
-    <meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
-    <script src='https://api.tiles.mapbox.com/mapbox-gl-js/v0.32.1/mapbox-gl.js'></script>
-    <link href='https://api.tiles.mapbox.com/mapbox-gl-js/v0.32.1/mapbox-gl.css' rel='stylesheet' />
-    <style>
-        body { margin:0; padding:0; }
-        #map { position:absolute; top:0; bottom:0; width:100%; }
-        .mapboxgl-popup-content {width:100%}
-        .number {color:#29A0F0; font-size:3em; font-weight: bold}
-    </style>
+  <meta charset='utf-8' />
+  <title></title>
+  <script
+    src="https://code.jquery.com/jquery-3.1.1.min.js"
+    integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8="
+    crossorigin="anonymous">
+  </script>
+  <meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
+  <script src='https://api.tiles.mapbox.com/mapbox-gl-js/v0.32.1/mapbox-gl.js'></script>
+  <link href='https://api.tiles.mapbox.com/mapbox-gl-js/v0.32.1/mapbox-gl.css' rel='stylesheet' />
+  <style>
+      body { margin:0; padding:0; }
+      #map { position:absolute; top:0; bottom:0; width:100%; }
+      .mapboxgl-popup-content {width:100%}
+      .number {color:#29A0F0; font-size:3em; font-weight: bold}
+  </style>
 </head>
 <body>
 
@@ -21,117 +26,130 @@
 <script src='https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v2.0.1/mapbox-gl-geocoder.js'></script>
 <link rel='stylesheet' href='https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v2.0.1/mapbox-gl-geocoder.css' type='text/css' />
 
+<!-- build data from spreadsheet -->
+<script> 
+  var url = "https://spreadsheets.google.com/feeds/list/15ZAOdOmDjueNmI1gIXvGtT7aAVlgeNMTrWVgYx6DBWo/od6/public/values?alt=json";
+
+  $.getJSON(url, function(data) {
+
+    var entry = data.feed.entry;
+    var dataJson = {};
+
+    $(entry).each(function(){
+      var country = this.gsx$countryofresidence.$t;
+      // need to handle "not making a project" option
+      if (!dataJson[country]) {
+        dataJson[country] = {downloads: 1};
+      } else {
+        dataJson[country].downloads = dataJson[country].downloads + 1;
+      }
+    });
+  });
+
+  var downloadFeatures = [];
+
+  // for each dataJson
+  // geocode name
+  // build into geojson feature
+
+    // {
+    //   'type': 'Feature',
+    //   'geometry': {
+    //     'type': 'Point',
+    //     'coordinates': [90.3, 23.8]
+    //   },
+    //   'properties': {
+    //     'country': 'Bangladesh',
+    //     'icon': 'circle',
+    //     'downloads': 12,
+    //   }
+    // }
+  // add to projects features
+
+  var downloadCollection = {
+    'type': 'geojson',
+    'data': {
+      'type': 'FeatureCollection',
+      'features': downloadFeatures
+    }
+};
+
+</script>
+
 <!-- main map script -->
 <script>
 mapboxgl.accessToken = 'pk.eyJ1Ijoib2hvcml6b25zIiwiYSI6ImNpejZjM3NjNjAxdjUycW90bnBzMHQwbmMifQ.GVgAPI_5XCmieoVElQ-MQA';
 
-var projects = {
-    'type': 'geojson',
-    'data': {
-        'type': 'FeatureCollection',
-        'features': [{
-            'type': 'Feature',
-            'geometry': {
-                'type': 'Point',
-                'coordinates': [90.3, 23.8]
-            },
-            'properties': {
-                'country': 'Bangladesh',
-                'icon': 'circle',
-                'people': 500,
-                'filters': 20,
-                'plans': 12,
-                'description': 'We\'ve worked directly with over 30 community groups'
-            }
-        }, {
-            'type': 'Feature',
-            'geometry': {
-                'type': 'Point',
-                'coordinates': [-1.5, 7,8]
-            },
-            'properties': {
-                'country': 'Ghana',
-                'icon': 'circle',
-                'people': 234,
-                'filters': 32,
-                'plans': 5,
-                'description': 'We\'re just getting started in Ghana- we\'re planning to send a team there in 2018 to help build more molds'
-            }
-        }]
-    }
-};
-
-
 var map = new mapboxgl.Map({
-    container: 'map', // container id
-    style: 'mapbox://styles/mapbox/light-v9', //stylesheet location
-    center: [0,0], // starting position
-    zoom: 1 // starting zoom
+  container: 'map', // container id
+  style: 'mapbox://styles/mapbox/light-v9', //stylesheet location
+  center: [0,0], // starting position
+  zoom: 1 // starting zoom
 });
 
 // wait for the map to load to add circle layer
 map.on('load', function () {
-    map.addLayer({
-        'id': 'projects',
-        'type': 'circle',
-        'source': projects,
-        'paint': {
-            // change radius according to people per project
-            // could also do filter, or change color based on one of the properties
-            'circle-radius': {
-                property: 'people',
-                type: 'exponential',
-                stops: [
-                    [{ 'zoom': 2, 'value': 1 }, 10],
-                    [{ 'zoom': 2, 'value': 1000 }, 100],
-                    [{ 'zoom': 20, 'value': 1 }, 30],
-                    [{ 'zoom': 20, 'value': 1000 }, 200]
-                ]
-            },
-            // use OHorizons blue
-            'circle-color': '#29A0F0',
-            'circle-opacity' : 0.8
-        }
-    });
+  map.addLayer({
+    'id': 'downloads',
+    'type': 'circle',
+    'source': downloadCollection,
+    'paint': {
+      // change radius according to people per project
+      // could also do filter, or change color based on one of the properties
+      'circle-radius': {
+        property: 'people',
+        type: 'exponential',
+        stops: [
+          [{ 'zoom': 2, 'value': 1 }, 10],
+          [{ 'zoom': 2, 'value': 1000 }, 100],
+          [{ 'zoom': 20, 'value': 1 }, 30],
+          [{ 'zoom': 20, 'value': 1000 }, 200]
+        ]
+      },
+      // use OHorizons blue
+      'circle-color': '#29A0F0',
+      'circle-opacity' : 0.8
+    }
+  });
 
-    // Create a popup, but don't add it to the map yet.
-    var popup = new mapboxgl.Popup({
-        closeButton: false,
-        closeOnClick: false
-    });
+  // Create a popup, but don't add it to the map yet.
+  var popup = new mapboxgl.Popup({
+      closeButton: false,
+      closeOnClick: false
+  });
 
-    // when the mouse moves, check for features under it and dislplay their popup if found
-    map.on('mousemove', function(e) {
-        var features = map.queryRenderedFeatures(e.point, { layers: ['projects'] });
-        // Change the cursor style as a UI indicator.
-        map.getCanvas().style.cursor = (features.length) ? 'pointer' : '';
+  // when the mouse moves, check for features under it and dislplay their popup if found
+  map.on('mousemove', function(e) {
+    var features = map.queryRenderedFeatures(e.point, { layers: ['projects'] });
+    // Change the cursor style as a UI indicator.
+    map.getCanvas().style.cursor = (features.length) ? 'pointer' : '';
 
-        if (!features.length) {
-            popup.remove();
-            return;
-        }
+    if (!features.length) {
+      popup.remove();
+      return;
+    }
 
-        var feature = features[0];
+    var feature = features[0];
 
-        // Populate the popup and set its coordinates
-        // based on the feature found.
-        popup.setLngLat(feature.geometry.coordinates)
-            .setHTML('<h1 style="color:#7b7e84;">' + feature.properties.country + '</h1>'
-                 // + '<p>' + feature.properties.description + '</p>'
-                 + '<br><text class="number">' + feature.properties.people + '</text>'
-                 + '<text style="color:#7b7e84;font-weight:bold;"> People Helped</text>'
-                 + '<br><text class="number">' + feature.properties.filters + '</text>'
-                 + '<text style="color:#7b7e84;font-weight:bold;"> Filters Built</text>'
-                 + '<br><text class="number">' + feature.properties.plans + '</text>'
-                 + '<text style="color:#7b7e84;font-weight:bold;"> Plans Downloaded</text>'
-                 )
-            .addTo(map);
-    });
+    // Populate the popup and set its coordinates
+    // based on the feature found.
+    popup.setLngLat(feature.geometry.coordinates)
+      .setHTML('<h1 style="color:#7b7e84;">' + feature.properties.country + '</h1>'
+         // + '<p>' + feature.properties.description + '</p>'
+         + '<br><text class="number">' + feature.properties.people + '</text>'
+         + '<text style="color:#7b7e84;font-weight:bold;"> People Helped</text>'
+         + '<br><text class="number">' + feature.properties.filters + '</text>'
+         + '<text style="color:#7b7e84;font-weight:bold;"> Filters Built</text>'
+         + '<br><text class="number">' + feature.properties.plans + '</text>'
+         + '<text style="color:#7b7e84;font-weight:bold;"> Plans Downloaded</text>'
+         )
+      .addTo(map);
+  });
 
-    map.addControl(new MapboxGeocoder({
-        accessToken: mapboxgl.accessToken,
-        types: 'country'
-    }));
+  map.addControl(new MapboxGeocoder({
+      accessToken: mapboxgl.accessToken,
+      types: 'country'
+  }));
 });
 
 </script>
